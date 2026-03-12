@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThumbsUp, ThumbsDown, MessageSquare, Check, X } from "lucide-react";
 import clsx from "clsx";
@@ -46,13 +46,21 @@ function loadFeedback(resultId: string): StoredFeedback | null {
 }
 
 export default function FeedbackWidget({ resultId, context }: FeedbackWidgetProps) {
-  const existing = loadFeedback(resultId);
-
-  const [vote, setVote] = useState<FeedbackValue>(existing?.value ?? null);
+  const [vote, setVote] = useState<FeedbackValue>(null);
   const [showComment, setShowComment] = useState(false);
-  const [comment, setComment] = useState(existing?.comment ?? "");
-  const [submitted, setSubmitted] = useState(!!existing);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Carrega feedback salvo apenas no cliente (evita erro de SSR com localStorage)
+  useEffect(() => {
+    const existing = loadFeedback(resultId);
+    if (existing) {
+      setVote(existing.value);
+      setComment(existing.comment ?? "");
+      setSubmitted(true);
+    }
+  }, [resultId]);
 
   function handleVote(v: "positive" | "negative") {
     if (submitted) return;
