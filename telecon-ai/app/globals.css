@@ -1,0 +1,180 @@
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Light theme (default) ───────────────────────────────── */
+:root {
+  --color-sidebar: #f7f7f5;
+  --color-main: #fcfcfa;
+  --color-surface: #ffffff;
+  --color-border: #e9e9e5;
+  --color-accent: #111111;
+  --color-accent-hover: #242424;
+  --color-muted: #71717a;
+  --color-text-primary: #111111;
+  --color-text-secondary: #3f3f46;
+}
+
+/* ── Dark theme · Deep Navy ───────────────────────── */
+.dark {
+  --color-sidebar: #0c0c12;
+  --color-main: #0f0f16;
+  --color-surface: #171721;
+  --color-border: #25253a;
+  --color-accent: #e8e8f2;
+  --color-accent-hover: #c8c8e0;
+  --color-muted: #55556e;
+  --color-text-primary: #e8e8f0;
+  --color-text-secondary: #8888a8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-main);
+  color: var(--color-text-primary);
+  font-family: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d8d8d3;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #25253a;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bdbdb7;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #35354e;
+}
+
+/* Logo: anel sutil em dark mode */
+.dark .logo-telecontrol {
+  box-shadow: 0 0 0 1px #25253a;
+  border-radius: 10px;
+}
+
+/* Textarea auto-resize */
+textarea {
+  resize: none;
+  overflow: hidden;
+}
+
+/* Markdown styles inside messages */
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3 {
+  font-weight: 700;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+  color: var(--color-text-primary);
+}
+
+.prose-chat p {
+  margin-bottom: 0.75em;
+  line-height: 1.7;
+}
+
+.prose-chat p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-chat ul,
+.prose-chat ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.prose-chat li {
+  margin-bottom: 0.25em;
+  line-height: 1.6;
+}
+
+.prose-chat code {
+  background: var(--color-surface);
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  font-size: 0.875em;
+  font-family: "IBM Plex Mono", "Fira Code", monospace;
+}
+
+.prose-chat pre {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1em;
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+
+.prose-chat pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+}
+
+.prose-chat blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1em;
+  color: var(--color-text-secondary);
+  margin: 0.75em 0;
+}
+
+.prose-chat strong {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.prose-chat a {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.prose-chat a:hover {
+  color: var(--color-text-secondary);
+}
+
+/* Typing cursor */
+.typing-cursor::after {
+  content: "▋";
+  animation: blink 1s step-end infinite;
+  color: var(--color-text-primary);
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
