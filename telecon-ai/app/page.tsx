@@ -19,7 +19,12 @@ async function fetchClassification(
   const response = await fetch("/api/predict", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ texto_cliente: filters.defeitoReclamado }),
+    body: JSON.stringify({
+      texto_cliente: filters.defeitoReclamado,
+      tipo_produto: filters.tipoProduto || null,
+      segmento: filters.segmento || null,
+      regiao: filters.regiao || null,
+    }),
   });
 
   if (!response.ok) {

@@ -4,6 +4,9 @@ const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 interface PredictRequest {
   texto_cliente: string;
+  tipo_produto?: string | null;
+  segmento?: string | null;
+  regiao?: string | null;
 }
 
 interface PredictResponse {
@@ -34,6 +37,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Faz proxy para o backend FastAPI ──
+    // Envia todos os filtros disponíveis, o backend decide se usa ou não
     const response = await fetch(`${BACKEND_URL}/predict`, {
       method: "POST",
       headers: {
@@ -41,6 +45,10 @@ export async function POST(req: NextRequest) {
       },
       body: JSON.stringify({
         texto_cliente: body.texto_cliente,
+        // Filtros opcionais (ajudam o modelo a refinar a classificação)
+        tipo_produto: body.tipo_produto || undefined,
+        segmento: body.segmento || undefined,
+        regiao: body.regiao || undefined,
       }),
     });
 

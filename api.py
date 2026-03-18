@@ -196,6 +196,9 @@ CLASSES = joblib.load(CLASSES_PATH) if os.path.exists(CLASSES_PATH) else []
 
 class ReclamacaoRequest(BaseModel):
     texto_cliente: str
+    tipo_produto: str | None = None
+    segmento: str | None = None
+    regiao: str | None = None
 
 class FeedbackRequest(BaseModel):
     texto_cliente: str
