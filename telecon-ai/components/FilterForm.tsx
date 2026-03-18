@@ -97,12 +97,14 @@ export default function FilterForm({
         />
         {!compact && (
           <div className="flex flex-wrap gap-1.5 pt-1">
+            <span className="text-xs text-muted mr-1">Sugestões:</span>
             {SUGESTOES_DEFEITO.map((s) => (
               <button
                 key={s}
                 type="button"
                 onClick={() => set("defeitoReclamado", s)}
                 className="text-xs px-2.5 py-1 rounded-full border border-border text-muted hover:border-text-secondary/40 hover:text-text-secondary transition-all"
+                title="Clique para adicionar"
               >
                 {s}
               </button>
@@ -156,25 +158,23 @@ export default function FilterForm({
       </div>
 
       {/* Região */}
-      {!compact && (
-        <div className="space-y-1.5">
-          <label className="text-xs font-medium text-text-secondary">
-            Região (opcional)
-          </label>
-          <select
-            value={filters.regiao}
-            onChange={(e) => set("regiao", e.target.value)}
-            className="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-text-primary/25 transition-all appearance-none"
-          >
-            <option value="">Qualquer região</option>
-            {REGIOES.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      <div className="space-y-1.5">
+        <label className="text-xs font-medium text-text-secondary">
+          Região {compact && "(opcional)"}
+        </label>
+        <select
+          value={filters.regiao}
+          onChange={(e) => set("regiao", e.target.value)}
+          className="w-full bg-surface border border-border rounded-xl px-4 py-2.5 text-sm text-text-primary outline-none focus:border-text-primary/25 transition-all appearance-none"
+        >
+          <option value="">Qualquer região</option>
+          {REGIOES.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Submit */}
       <button

@@ -10,6 +10,7 @@ import AnimatedGradientBackground from "@/components/ui/animated-gradient-backgr
 import { useTheme } from "@/components/ui/theme-provider";
 import { Typewriter } from "@/components/ui/typewriter";
 import { motion, AnimatePresence } from "framer-motion";
+import { AlertCircle, X } from "lucide-react";
 
 // Chama a API real do backend FastAPI
 async function fetchClassification(
@@ -98,6 +99,7 @@ export default function ClassifierPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const { theme } = useTheme();
 
   // Verifica autenticação ao montar o componente
@@ -128,6 +130,7 @@ export default function ClassifierPage() {
   const handleAnalyze = useCallback(
     async (filters: FilterValues) => {
       setIsLoading(true);
+      setError(null);
       try {
         const output = await fetchClassification(filters);
         const id = generateId();
@@ -144,6 +147,10 @@ export default function ClassifierPage() {
         };
         setHistory((prev) => [record, ...prev]);
         setActiveId(id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Erro desconhecido";
+        setError(message);
+        console.error("Erro na análise:", err);
       } finally {
         setIsLoading(false);
       }
@@ -245,7 +252,31 @@ export default function ClassifierPage() {
             </button>
           </div>
         </header>
+Error Alert */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="fixed top-4 right-4 z-50 flex items-start gap-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 rounded-xl p-4 max-w-sm"
+            >
+              <AlertCircle size={16} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm text-red-700 dark:text-red-300 font-medium">Erro</p>
+                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200 flex-shrink-0"
+              >
+                <X size={14} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
+        {/* 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {activeRecord ? (

@@ -17,7 +17,7 @@ load_dotenv('.env.azure')
 
 STORAGE_ACCOUNT = os.getenv('AZURE_STORAGE_ACCOUNT_NAME')
 CONTAINER = os.getenv('AZURE_STORAGE_CONTAINER')
-LOCAL_DATA_DIR = 'data'
+LOCAL_DATA_DIR = 'DATASET'
 
 print("=" * 70)
 print("📤 UPLOAD DE DADOS PARA AZURE STORAGE")
