@@ -7,28 +7,28 @@ import os
 def testar_imports():
     """Verifica se todos os imports funcionam"""
     print("=" * 60)
-    print("🔍 TESTANDO IMPORTS")
+    print("[BUSCAR] TESTANDO IMPORTS")
     print("=" * 60)
     
     try:
         from ml import ClassificadorDefeitos, treinar_modelo_mock
-        print("✅ ml.py importado com sucesso")
+        print("[OK] ml.py importado com sucesso")
     except ImportError as e:
-        print(f"❌ Erro ao importar ml.py: {e}")
+        print(f"[ERRO] Erro ao importar ml.py: {e}")
         return False
     
     try:
         from trainamento_modelo import treinar_e_salvar_modelo
-        print("✅ trainamento_modelo.py importado com sucesso")
+        print("[OK] trainamento_modelo.py importado com sucesso")
     except ImportError as e:
-        print(f"❌ Erro ao importar trainamento_modelo.py: {e}")
+        print(f"[ERRO] Erro ao importar trainamento_modelo.py: {e}")
         return False
     
     try:
         from api import app, classificador
-        print("✅ api.py importado com sucesso")
+        print("[OK] api.py importado com sucesso")
     except ImportError as e:
-        print(f"❌ Erro ao importar api.py: {e}")
+        print(f"[ERRO] Erro ao importar api.py: {e}")
         return False
     
     return True
@@ -36,22 +36,22 @@ def testar_imports():
 def testar_treinamento():
     """Testa o treinamento do modelo"""
     print("\n" + "=" * 60)
-    print("🤖 TESTANDO TREINAMENTO")
+    print("[IA] TESTANDO TREINAMENTO")
     print("=" * 60)
     
     try:
         from trainamento_modelo import treinar_e_salvar_modelo
         treinar_e_salvar_modelo()
-        print("✅ Modelo treinado com sucesso")
+        print("[OK] Modelo treinado com sucesso")
         return True
     except Exception as e:
-        print(f"❌ Erro ao treinar: {e}")
+        print(f"[ERRO] Erro ao treinar: {e}")
         return False
 
 def testar_predicao():
     """Testa a predição"""
     print("\n" + "=" * 60)
-    print("🎯 TESTANDO PREDIÇÃO")
+    print("[ALVO] TESTANDO PREDIÇÃO")
     print("=" * 60)
     
     try:
@@ -71,10 +71,10 @@ def testar_predicao():
         print(f"Defeito predito: {defeito}")
         print(f"Confiança: {confianca:.2%}")
         print(f"Causa raiz: {causa_raiz}")
-        print("✅ Predição funcionando")
+        print("[OK] Predição funcionando")
         return True
     except Exception as e:
-        print(f"❌ Erro na predição: {e}")
+        print(f"[ERRO] Erro na predição: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -82,7 +82,7 @@ def testar_predicao():
 def testar_api():
     """Testa os endpoints da API"""
     print("\n" + "=" * 60)
-    print("🌐 TESTANDO API ENDPOINTS")
+    print("[API] TESTANDO API ENDPOINTS")
     print("=" * 60)
     
     try:
@@ -92,24 +92,24 @@ def testar_api():
         client = TestClient(app)
         
         # Teste /health
-        print("\n📍 Testando /health...")
+        print("\n[TESTE] Testando /health...")
         response = client.get("/health")
         print(f"Status: {response.status_code} - {response.json()}")
         assert response.status_code == 200
-        print("✅ /health OK")
+        print("[OK] /health OK")
         
         # Teste /predict
-        print("\n📍 Testando /predict...")
+        print("\n[TESTE] Testando /predict...")
         response = client.post("/predict", json={"texto_cliente": "tela quebrada"})
         print(f"Status: {response.status_code}")
         if response.status_code == 200:
             print(f"Resultado: {response.json()}")
-            print("✅ /predict OK")
+            print("[OK] /predict OK")
         else:
-            print(f"⚠️ /predict retornou: {response.json()}")
+            print(f"[AVISO] /predict retornou: {response.json()}")
         
         # Teste /feedback
-        print("\n📍 Testando /feedback...")
+        print("\n[TESTE] Testando /feedback...")
         response = client.post("/feedback", json={
             "texto_cliente": "tela quebrada",
             "defeito_sugerido": "TELA_QUEBRADA",
@@ -118,25 +118,25 @@ def testar_api():
         })
         print(f"Status: {response.status_code} - {response.json()}")
         assert response.status_code == 200
-        print("✅ /feedback OK")
+        print("[OK] /feedback OK")
         
         # Teste /metricas
-        print("\n📍 Testando /metricas...")
+        print("\n[TESTE] Testando /metricas...")
         response = client.get("/metricas")
         print(f"Status: {response.status_code} - {response.json()}")
         assert response.status_code == 200
-        print("✅ /metricas OK")
+        print("[OK] /metricas OK")
         
         return True
     except Exception as e:
-        print(f"❌ Erro ao testar API: {e}")
+        print(f"[ERRO] Erro ao testar API: {e}")
         import traceback
         traceback.print_exc()
         return False
 
 def main():
     """Executa todos os testes"""
-    print("\n" + "🚀 INICIANDO TESTES DE INTEGRAÇÃO" + "\n")
+    print("\n" + "[START] INICIANDO TESTES DE INTEGRAÇÃO" + "\n")
     
     resultados = {
         "Imports": testar_imports(),
@@ -146,20 +146,20 @@ def main():
     }
     
     print("\n" + "=" * 60)
-    print("📊 RESUMO DOS TESTES")
+    print("[DADOS] RESUMO DOS TESTES")
     print("=" * 60)
     
     for teste, resultado in resultados.items():
-        status = "✅ PASSOU" if resultado else "❌ FALHOU"
+        status = "[OK] PASSOU" if resultado else "[ERRO] FALHOU"
         print(f"{teste}: {status}")
     
     todos_passaram = all(resultados.values())
     
     print("\n" + "=" * 60)
     if todos_passaram:
-        print("🎉 TODOS OS TESTES PASSARAM - ARQUITETURA OK!")
+        print("[SUCESSO] TODOS OS TESTES PASSARAM - ARQUITETURA OK!")
     else:
-        print("⚠️ ALGUNS TESTES FALHARAM - VERIFIQUE OS ERROS")
+        print("[AVISO] ALGUNS TESTES FALHARAM - VERIFIQUE OS ERROS")
     print("=" * 60 + "\n")
     
     return todos_passaram

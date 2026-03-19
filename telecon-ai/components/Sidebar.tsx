@@ -60,14 +60,14 @@ export default function Sidebar({
       <div className="flex items-center justify-between px-3 py-3 border-b border-border">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <img src="/logo.svg" alt="Telecontrol AI" className="logo-telecontrol w-7 h-7 flex-shrink-0" />
+            <img src="/logo.svg" alt="Break FIX" className="logo-telecontrol w-7 h-7 flex-shrink-0" />
             <span className="font-semibold text-sm text-text-primary tracking-tight">
-              Telecontrol AI
+              Break FIX
             </span>
           </div>
         )}
         {collapsed && (
-          <img src="/logo.svg" alt="Telecontrol AI" className="logo-telecontrol w-7 h-7 mx-auto" />
+          <img src="/logo.svg" alt="Break FIX" className="logo-telecontrol w-7 h-7 mx-auto" />
         )}
       </div>
 

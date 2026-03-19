@@ -62,8 +62,13 @@ export default function FilterForm({
   const set = (key: keyof FilterValues, value: string) =>
     setFilters((prev) => ({ ...prev, [key]: value }));
 
-  const canSubmit =
-    filters.defeitoReclamado.trim() && !isLoading;
+  const hasText = filters.defeitoReclamado.trim().length > 0;
+  const hasAnyFilter =
+    filters.tipoProduto.trim().length > 0 ||
+    filters.segmento.trim().length > 0 ||
+    filters.regiao.trim().length > 0;
+
+  const canSubmit = (hasText || hasAnyFilter) && !isLoading;
 
   return (
     <div className={clsx("w-full", compact ? "space-y-3" : "space-y-5")}>
@@ -83,7 +88,7 @@ export default function FilterForm({
       <div className="space-y-1.5">
         <label className="text-xs font-medium text-text-secondary">
           Defeito reclamado pelo cliente{" "}
-          <span className="text-red-400">*</span>
+          <span className="text-xs text-muted">(opcional)</span>
         </label>
         <input
           type="text"

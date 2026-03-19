@@ -24,29 +24,29 @@ IMAGE_NAME = f"{REGISTRY_NAME}.azurecr.io/telecontrol-api:latest"
 DNS_PREFIX = "telecontrol-api"
 
 print("=" * 70)
-print("🚀 DEPLOY EM AZURE CONTAINER INSTANCES")
+print("[START] DEPLOY EM AZURE CONTAINER INSTANCES")
 print("=" * 70)
 
 def executar_comando(cmd, descricao):
     """Executa comando"""
-    print(f"\n📍 {descricao}")
+    print(f"\n[TESTE] {descricao}")
     print(f"   {cmd}\n")
     try:
         resultado = subprocess.run(cmd, shell=True, capture_output=False, text=True)
         return resultado.returncode == 0
     except Exception as e:
-        print(f"❌ Erro: {e}")
+        print(f"[ERRO] Erro: {e}")
         return False
 
 def main():
     """Fluxo principal"""
     
-    print("\n📋 PRÉ-REQUISITOS:")
-    print("  ✓ setup_azure_ml.py executado")
-    print("  ✓ Docker instalado")
-    print("  ✓ az cli instalado")
+    print("\n[LISTA] PRÙ-REQUISITOS:")
+    print("  [OK] setup_azure_ml.py executado")
+    print("  [OK] Docker instalado")
+    print("  [OK] az cli instalado")
     
-    input("\n▶️ Pressione ENTER para iniciar deploy...\n")
+    input("\n[>] Pressione ENTER para iniciar deploy...\n")
     
     # 1. Build da imagem
     if not executar_comando(

@@ -1,7 +1,7 @@
 "use client";
 
 import clsx from "clsx";
-import { ChevronDown, ChevronUp, Copy, Check, ExternalLink, Wrench, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Copy, Check, ExternalLink, Wrench, FileText, Globe, Loader2 } from "lucide-react";
 import { useState } from "react";
 import FeedbackWidget from "@/components/FeedbackWidget";
 
@@ -25,13 +25,28 @@ export interface AnalysisOutput {
   results: ClassificationResult[];
   totalAnalyzed: number;
   modelUsed: string;
+  webSearchSuggested?: boolean;
+  webSearchPerformed?: boolean;
+  webSearchLoading?: boolean;
+  webSearchStatus?: string;
+  webSearchError?: string | null;
+  webSearchResults?: Array<{
+    title: string;
+    url: string;
+    content: string;
+  }>;
+  webSearchContext?: {
+    topDefects: string[];
+    datasetExamples: string[];
+  };
 }
 
 interface ResultsPanelProps {
   output: AnalysisOutput;
+  onRunWebSearch?: () => void;
 }
 
-export default function ResultsPanel({ output }: ResultsPanelProps) {
+export default function ResultsPanel({ output, onRunWebSearch }: ResultsPanelProps) {
   const [top, ...alternativas] = output.results;
 
   return (
@@ -58,6 +73,11 @@ export default function ResultsPanel({ output }: ResultsPanelProps) {
       {/* Diagnóstico principal */}
       {top && <PrimaryCard result={top} />}
 
+      {/* Busca web opcional baseada na confiança do ML */}
+      {(output.webSearchSuggested || output.webSearchPerformed) && (
+        <WebSearchSection output={output} onRunWebSearch={onRunWebSearch} />
+      )}
+
       {/* Hipóteses alternativas */}
       {alternativas.length > 0 && (
         <div className="space-y-2">
@@ -76,6 +96,80 @@ export default function ResultsPanel({ output }: ResultsPanelProps) {
         {output.totalAnalyzed.toLocaleString("pt-BR")} ordens de serviço.
         Valide com técnico especializado antes de qualquer ação em campo.
       </p>
+    </div>
+  );
+}
+
+function WebSearchSection({
+  output,
+  onRunWebSearch,
+}: {
+  output: AnalysisOutput;
+  onRunWebSearch?: () => void;
+}) {
+  const shouldShowButton = output.webSearchSuggested && !output.webSearchPerformed;
+  const hasResults = (output.webSearchResults?.length ?? 0) > 0;
+
+  return (
+    <div className="bg-surface border border-border rounded-xl p-4 space-y-3">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-text-secondary uppercase tracking-widest">
+            Apoio Web
+          </p>
+          <p className="text-sm text-text-primary mt-1">
+            A confiança do ML ficou abaixo do limiar. Esta busca usa obrigatoriamente o contexto do ML e dos datasets históricos.
+          </p>
+          <p className="text-[11px] text-muted mt-1">
+            Regra ativa: toda pesquisa de IA é contextualizada por top defeitos previstos e exemplos do dataset.
+          </p>
+        </div>
+
+        {shouldShowButton && (
+          <button
+            type="button"
+            onClick={onRunWebSearch}
+            disabled={output.webSearchLoading || !onRunWebSearch}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-xs font-medium text-text-primary hover:bg-main transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {output.webSearchLoading ? <Loader2 size={13} className="animate-spin" /> : <Globe size={13} />}
+            {output.webSearchLoading ? "Buscando..." : "Buscar na web"}
+          </button>
+        )}
+      </div>
+
+      {output.webSearchError && (
+        <p className="text-xs text-red-500">{output.webSearchError}</p>
+      )}
+
+      {output.webSearchPerformed && !hasResults && !output.webSearchError && (
+        <p className="text-xs text-muted">Nenhuma fonte relevante encontrada para esta consulta.</p>
+      )}
+
+      {hasResults && (
+        <div className="space-y-2">
+          <p className="text-xs text-muted">Fontes encontradas:</p>
+          {output.webSearchResults?.map((item, index) => (
+            <div key={`${item.url}-${index}`} className="rounded-lg border border-border p-3 bg-main/50">
+              <p className="text-sm font-medium text-text-primary">{item.title || `Fonte ${index + 1}`}</p>
+              {item.content && (
+                <p className="text-xs text-muted mt-1 line-clamp-3">{item.content}</p>
+              )}
+              {item.url?.startsWith("http") && (
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-text-primary mt-2"
+                >
+                  <ExternalLink size={11} />
+                  Abrir fonte
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -13,11 +13,6 @@ const SETORES = [
   { id: "c", label: "Setor C", desc: "Linha Branca" },
 ];
 
-const CREDENTIALS = {
-  email: "teste.email@gmail.com",
-  password: "12345",
-};
-
 export default function LoginPage() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -40,13 +35,24 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    // Simula latência de autenticação
+    // 1. Simula latência de rede
     await new Promise((r) => setTimeout(r, 1100));
 
-    if (
-      email.trim().toLowerCase() === CREDENTIALS.email &&
-      password === CREDENTIALS.password
-    ) {
+    // 2. Validação básica
+    if (!email.trim() || !password.trim()) {
+      setLoading(false);
+      setError("Por favor, preencha o e-mail e a senha.");
+      return;
+    }
+
+    // 3. Simulação de autenticação
+    // EM PRODUÇÃO: aqui você enviaria `email` e `password` para uma API
+    // de autenticação segura no seu backend. NUNCA armazene credenciais
+    // ou lógica de validação no frontend.
+    // Para este demo, vamos simular um login bem-sucedido.
+    const isLoginSuccessful = true;
+
+    if (isLoginSuccessful) {
       const setorInfo = SETORES.find((s) => s.id === setor);
       localStorage.setItem(
         "telecontrol_auth",
@@ -113,7 +119,7 @@ export default function LoginPage() {
         >
           <div className="inline-flex items-center gap-2 border border-border rounded-full px-3 py-1 text-xs text-text-secondary bg-surface/80 backdrop-blur-sm">
             <Sparkles size={12} className="text-text-primary" />
-            Telecontrol AI &middot; Acesso Restrito
+            Break FIX &middot; Acesso Restrito
           </div>
         </motion.div>
 
@@ -128,7 +134,7 @@ export default function LoginPage() {
                 className="logo-telecontrol w-7 h-7 opacity-80"
               />
               <h1 className="text-lg font-semibold tracking-tight text-text-primary">
-                TELECONTROL AI
+                BREAK FIX
               </h1>
             </div>
             <p className="text-xs text-muted mt-1">
@@ -311,7 +317,7 @@ export default function LoginPage() {
           transition={{ delay: 0.5 }}
           className="text-center text-xs text-muted mt-5"
         >
-          Telecontrol AI &copy; {new Date().getFullYear()} &middot; Diagnóstico de Equipamentos
+          Break FIX &copy; {new Date().getFullYear()} &middot; Diagnóstico de Equipamentos
         </motion.p>
       </motion.div>
     </div>

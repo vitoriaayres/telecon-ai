@@ -11,7 +11,7 @@ import os
 import time
 
 print("=" * 80)
-print("🧪 VALIDAÇÃO COMPLETA - ANTES DE IR PARA AZURE")
+print("[TESTE] VALIDAÇÃO COMPLETA - ANTES DE IR PARA AZURE")
 print("=" * 80)
 
 tests_passed = 0
@@ -21,19 +21,19 @@ def test(nome, funcao):
     """Executa um teste"""
     global tests_passed, tests_failed
     
-    print(f"\n{'─' * 80}")
-    print(f"🔍 {nome}")
-    print(f"{'─' * 80}")
+    print(f"\n{'-' * 80}")
+    print(f"[BUSCAR] {nome}")
+    print(f"{'-' * 80}")
     
     try:
         funcao()
-        print("✅ PASSOU")
+        print("[OK] PASSOU")
         tests_passed += 1
     except AssertionError as e:
-        print(f"❌ FALHOU: {e}")
+        print(f"[ERRO] FALHOU: {e}")
         tests_failed += 1
     except Exception as e:
-        print(f"❌ ERRO: {e}")
+        print(f"[ERRO] ERRO: {e}")
         tests_failed += 1
 
 # ========== TESTES ==========
@@ -246,18 +246,18 @@ if __name__ == "__main__":
     elapsed = time.time() - start_time
     
     print("\n" + "=" * 80)
-    print("📊 RESUMO DOS TESTES")
+    print("[DADOS] RESUMO DOS TESTES")
     print("=" * 80)
     
-    print(f"""\n
-✅ Testes que passaram: {tests_passed}/10
-❌ Testes que falharam: {tests_failed}/10
-⏱️  Tempo total: {elapsed:.2f}s
+    print(f"""
+[OK] Testes que passaram: {tests_passed}/10
+[ERRO] Testes que falharam: {tests_failed}/10
+[TEMPO] Tempo total: {elapsed:.2f}s
     """)
     
     if tests_failed == 0:
         print("=" * 80)
-        print("🎉 TUDO FUNCIONANDO PERFEITAMENTE!")
+        print("[SUCESSO] TUDO FUNCIONANDO PERFEITAMENTE!")
         print("=" * 80)
         print("""
 Seu projeto está pronto para Azure! Próximos passos:
@@ -268,11 +268,11 @@ Seu projeto está pronto para Azure! Próximos passos:
 4. Executar: python training_pipeline.py
 5. Executar: python deploy_aci.py
 
-Bom deploy! 🚀
+Bom deploy! [START]
         """)
     else:
         print("=" * 80)
-        print("⚠️ ALGUNS TESTES FALHARAM")
+        print("[AVISO] ALGUNS TESTES FALHARAM")
         print("=" * 80)
         print("Corrija os erros acima antes de enviar para Azure")
         sys.exit(1)

@@ -53,10 +53,10 @@ class AzureMLClassificador:
                 version=1
             )
             
-            print(f"✅ Modelo Azure ML carregado: {modelo_nome}")
+            print(f"[OK] Modelo Azure ML carregado: {modelo_nome}")
             
         except Exception as e:
-            print(f"⚠️ Erro ao carregar modelo Azure ML: {e}")
+            print(f"[AVISO] Erro ao carregar modelo Azure ML: {e}")
             self.modelo = None
     
     def prever(self, reclamacao_cliente: str) -> Tuple[str, float]:
@@ -124,10 +124,10 @@ class AzureStorageFeedback:
                 FEEDBACK_CONTAINER
             )
             
-            print("✅ Conectado ao Azure Blob Storage para Feedback")
+            print("[OK] Conectado ao Azure Blob Storage para Feedback")
             
         except Exception as e:
-            print(f"⚠️ Erro ao conectar ao Storage: {e}")
+            print(f"[AVISO] Erro ao conectar ao Storage: {e}")
             self.blob_service_client = None
     
     def salvar_feedback(self, feedback_data: dict) -> bool:
@@ -142,7 +142,7 @@ class AzureStorageFeedback:
         """
         
         if not self.blob_service_client:
-            print("⚠️ Storage não conectado")
+            print("[AVISO] Storage não conectado")
             return False
         
         try:
@@ -160,11 +160,11 @@ class AzureStorageFeedback:
                 overwrite=False
             )
             
-            print(f"✅ Feedback salvo: {filename}")
+            print(f"[OK] Feedback salvo: {filename}")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao salvar feedback: {e}")
+            print(f"[ERRO] Erro ao salvar feedback: {e}")
             return False
     
     def obter_feedback_stats(self) -> dict:
@@ -184,7 +184,7 @@ class AzureStorageFeedback:
             }
             
         except Exception as e:
-            print(f"⚠️ Erro ao obter stats: {e}")
+            print(f"[AVISO] Erro ao obter stats: {e}")
             return {}
 
 # Singleton instances
@@ -199,7 +199,7 @@ def get_classificador_azure() -> AzureMLClassificador:
         try:
             _classificador_azure = AzureMLClassificador()
         except Exception as e:
-            print(f"⚠️ Erro ao inicializar classificador Azure: {e}")
+            print(f"[AVISO] Erro ao inicializar classificador Azure: {e}")
             _classificador_azure = None
     
     return _classificador_azure
@@ -212,7 +212,7 @@ def get_storage_feedback() -> AzureStorageFeedback:
         try:
             _storage_feedback = AzureStorageFeedback()
         except Exception as e:
-            print(f"⚠️ Erro ao inicializar storage: {e}")
+            print(f"[AVISO] Erro ao inicializar storage: {e}")
             _storage_feedback = None
     
     return _storage_feedback

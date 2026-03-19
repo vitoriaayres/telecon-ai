@@ -5,12 +5,17 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import FilterForm, { FilterValues } from "@/components/FilterForm";
 import ResultsPanel, { AnalysisOutput } from "@/components/ResultsPanel";
-import { Sparkles, ArrowLeft, LogOut } from "lucide-react";
+import { Sparkles, ArrowLeft, LogOut, AlertCircle, X } from "lucide-react";
 import AnimatedGradientBackground from "@/components/ui/animated-gradient-background";
 import { useTheme } from "@/components/ui/theme-provider";
 import { Typewriter } from "@/components/ui/typewriter";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, X } from "lucide-react";
+
+interface WebSearchItem {
+  title: string;
+  url: string;
+  content: string;
+}
 
 // Chama a API real do backend FastAPI
 async function fetchClassification(
@@ -74,6 +79,59 @@ async function fetchClassification(
     results,
     totalAnalyzed: data.total_registros ?? data.total_classes ?? 0,
     modelUsed: modelLabel,
+    webSearchSuggested: Boolean(data.sugere_busca),
+    webSearchPerformed: false,
+    webSearchLoading: false,
+    webSearchError: null,
+    webSearchResults: [],
+    webSearchContext: {
+      topDefects: Array.isArray(data?.contexto_web?.top_defeitos)
+        ? data.contexto_web.top_defeitos
+        : [],
+      datasetExamples: Array.isArray(data?.contexto_web?.exemplos_dataset)
+        ? data.contexto_web.exemplos_dataset
+        : [],
+    },
+  };
+}
+
+async function fetchWebSearch(
+  query: string,
+  filters: FilterValues,
+  context?: {
+    topDefects: string[];
+    datasetExamples: string[];
+  }
+): Promise<{
+  status: string;
+  resultados: WebSearchItem[];
+}> {
+  const response = await fetch("/api/web-search", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      texto_cliente: query,
+      tipo_produto: filters.tipoProduto || null,
+      segmento: filters.segmento || null,
+      regiao: filters.regiao || null,
+      top_defeitos: context?.topDefects ?? [],
+      exemplos_dataset: context?.datasetExamples ?? [],
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error ?? data.detail ?? `Erro ${response.status}`);
+  }
+
+  if (data.status && data.status !== "ok" && data.status !== "no_results" && data.status !== "fallback_context" && data.status !== "low_context") {
+    throw new Error(data.error ?? `Falha na busca web (${data.status})`);
+  }
+
+  return {
+    status: data.status ?? "ok",
+    resultados: Array.isArray(data.resultados) ? data.resultados : [],
   };
 }
 
@@ -105,6 +163,7 @@ export default function ClassifierPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [webSearchBusyId, setWebSearchBusyId] = useState<string | null>(null);
   const { theme } = useTheme();
 
   // Verifica autenticação ao montar o componente
@@ -169,6 +228,78 @@ export default function ClassifierPage() {
     setHistory((prev) => prev.filter((h) => h.id !== id));
     setActiveId((curr) => (curr === id ? null : curr));
   }, []);
+
+  const handleRunWebSearch = useCallback(async (recordId: string) => {
+    setWebSearchBusyId(recordId);
+    setError(null);
+
+    const record = history.find((item) => item.id === recordId);
+    if (!record) {
+      setWebSearchBusyId(null);
+      return;
+    }
+
+    setHistory((prev) =>
+      prev.map((item) =>
+        item.id === recordId
+          ? {
+              ...item,
+              output: {
+                ...item.output,
+                webSearchLoading: true,
+                webSearchError: null,
+              },
+            }
+          : item
+      )
+    );
+
+    try {
+      const web = await fetchWebSearch(
+        record.output.filters.defeitoReclamado,
+        record.output.filters,
+        record.output.webSearchContext
+      );
+
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.id === recordId
+            ? {
+                ...item,
+                output: {
+                  ...item.output,
+                  webSearchPerformed: true,
+                  webSearchLoading: false,
+                  webSearchStatus: web.status,
+                  webSearchResults: web.resultados,
+                  webSearchError: null,
+                },
+              }
+            : item
+        )
+      );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Erro ao buscar fontes na web";
+      setHistory((prev) =>
+        prev.map((item) =>
+          item.id === recordId
+            ? {
+                ...item,
+                output: {
+                  ...item.output,
+                  webSearchPerformed: true,
+                  webSearchLoading: false,
+                  webSearchError: message,
+                },
+              }
+            : item
+        )
+      );
+      setError(message);
+    } finally {
+      setWebSearchBusyId(null);
+    }
+  }, [history]);
 
   const conversations = history.map((h) => ({
     id: h.id,
@@ -257,7 +388,7 @@ export default function ClassifierPage() {
             </button>
           </div>
         </header>
-Error Alert */}
+        {/* Error Alert */}
         <AnimatePresence>
           {error && (
             <motion.div
@@ -281,7 +412,6 @@ Error Alert */}
           )}
         </AnimatePresence>
 
-        {/* 
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {activeRecord ? (
@@ -310,7 +440,16 @@ Error Alert */}
               </div>
 
               {/* Resultados */}
-              <ResultsPanel output={activeRecord.output} />
+              <ResultsPanel
+                output={{
+                  ...activeRecord.output,
+                  webSearchLoading:
+                    activeRecord.id === webSearchBusyId
+                      ? true
+                      : activeRecord.output.webSearchLoading,
+                }}
+                onRunWebSearch={() => handleRunWebSearch(activeRecord.id)}
+              />
             </div>
           ) : (
             /* ── Tela inicial: formulário centralizado ── */
@@ -380,9 +519,9 @@ Error Alert */}
 
         {/* Footer */}
         <footer className="flex-shrink-0 flex items-center justify-center gap-2.5 py-2.5 border-t border-border bg-main/80 backdrop-blur-sm">
-          <img src="/logo.svg" alt="Telecontrol AI" className="logo-telecontrol w-5 h-5 opacity-70" />
+          <img src="/logo.svg" alt="Break FIX" className="logo-telecontrol w-5 h-5 opacity-70" />
           <span className="text-xs text-muted">
-            Telecontrol AI &copy; {new Date().getFullYear()} &middot; Diagnóstico de Equipamentos
+            Break FIX &copy; {new Date().getFullYear()} &middot; Diagnóstico de Equipamentos
           </span>
         </footer>
       </main>

@@ -1,0 +1,16 @@
+[
+  {
+    "texto_cliente": "tela quebrada",
+    "defeito_sugerido": "TELA_QUEBRADA",
+    "defeito_correto": "TELA_QUEBRADA",
+    "modelo_acertou": true,
+    "tecnico_id": "TEC001"
+  },
+  {
+    "texto_cliente": "tela quebrada",
+    "defeito_sugerido": "TELA_QUEBRADA",
+    "defeito_correto": "TELA_QUEBRADA",
+    "modelo_acertou": true,
+    "tecnico_id": "TEC001"
+  }
+]

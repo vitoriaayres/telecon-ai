@@ -23,15 +23,19 @@ interface PredictResponse {
   total_classes: number;
   total_registros: number;
   modelo_ativo: string;
+  sugere_busca?: boolean;
 }
 
 export async function POST(req: NextRequest) {
   try {
     const body: PredictRequest = await req.json();
 
-    if (!body.texto_cliente || body.texto_cliente.trim() === "") {
+    const hasText = body.texto_cliente && body.texto_cliente.trim() !== "";
+    const hasFilter = body.tipo_produto || body.segmento || body.regiao;
+
+    if (!hasText && !hasFilter) {
       return NextResponse.json(
-        { error: "texto_cliente é obrigatório" },
+        { error: "Por favor, forneça a reclamação do cliente ou selecione pelo menos um filtro." },
         { status: 400 }
       );
     }
@@ -44,7 +48,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        texto_cliente: body.texto_cliente,
+        texto_cliente: body.texto_cliente || "",
         // Filtros opcionais (ajudam o modelo a refinar a classificação)
         tipo_produto: body.tipo_produto || undefined,
         segmento: body.segmento || undefined,
