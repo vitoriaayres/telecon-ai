@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function getBackendUrl() {
+  const configured = process.env.BACKEND_URL?.trim();
+  if (configured) return configured;
+
+  // Em dev local, mantém conveniência com FastAPI rodando na porta 8000.
+  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+
+  return null;
+}
+
 interface WebSearchRequest {
   texto_cliente: string;
   tipo_produto?: string | null;
@@ -11,6 +21,16 @@ interface WebSearchRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      return NextResponse.json(
+        {
+          error: "BACKEND_URL não configurado no ambiente de produção.",
+        },
+        { status: 503 }
+      );
+    }
+
     const body: WebSearchRequest = await req.json();
 
     if (!body.texto_cliente || body.texto_cliente.trim() === "") {
@@ -20,29 +40,73 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Mock response - simulando busca web contextual
-    const data = {
-      status: "ok",
-      resultados: [
+    const topDefeitos = Array.isArray(body.top_defeitos) ? body.top_defeitos : [];
+    const exemplosDataset = Array.isArray(body.exemplos_dataset) ? body.exemplos_dataset : [];
+
+    if (topDefeitos.length === 0 && exemplosDataset.length === 0) {
+      return NextResponse.json(
         {
-          title: "Diagnóstico baseado em histórico interno",
-          url: "https://suaempresa.com/kb/diagnostico",
-          content: "Análise contextualizada usando dados históricos de ordens de serviço similares. Recomendações técnicas baseadas em padrões de falhas identificadas.",
+          error: "Contexto obrigatório ausente. Faça a análise com IA primeiro para enviar contexto dos datasets.",
+          status: "missing_context",
+          resultados: [],
         },
+        { status: 400 }
+      );
+    }
+
+    const response = await fetch(`${backendUrl}/web-search`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        texto_cliente: body.texto_cliente,
+        tipo_produto: body.tipo_produto ?? null,
+        segmento: body.segmento ?? null,
+        regiao: body.regiao ?? null,
+        top_defeitos: topDefeitos,
+        exemplos_dataset: exemplosDataset,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      return NextResponse.json(
         {
-          title: "Manual técnico - Solução de problemas",
-          url: "https://suaempresa.com/manuais/troubleshooting",
-          content: "Guia passo-a-passo para diagnóstico rápido. Inclui checklist de verificação e procedimentos recomendados.",
+          error: error.detail || "Erro ao processar busca web no backend",
         },
-      ],
-    };
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+
+    if (data?.status && data.status !== "ok" && data.status !== "fallback_context" && data.status !== "low_context") {
+      const statusMessage =
+        data.status === "missing_tavily_key"
+          ? "Chave TAVILY_API_KEY ausente no backend"
+          : data.status === "no_question"
+          ? "Consulta vazia para busca web"
+          : data.status === "no_results"
+          ? "Nenhum resultado encontrado na busca web"
+          : "Falha ao executar busca web no backend";
+
+      return NextResponse.json(
+        {
+          error: statusMessage,
+          status: data.status,
+          resultados: Array.isArray(data.resultados) ? data.resultados : [],
+        },
+        { status: data.status === "no_results" ? 200 : 502 }
+      );
+    }
 
     return NextResponse.json(data);
   } catch (error) {
     console.error("[web-search] Erro interno:", error);
     return NextResponse.json(
       {
-        error: "Erro ao processar busca web",
+        error: "Erro ao conectar ao backend para busca web",
       },
       { status: 500 }
     );

@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 
+function getBackendUrl() {
+  const configured = process.env.BACKEND_URL?.trim();
+  if (configured) return configured;
+
+  // Em dev local, mantém conveniência com FastAPI rodando na porta 8000.
+  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+
+  return null;
+}
+
 interface PredictRequest {
   texto_cliente: string;
   tipo_produto?: string | null;
@@ -26,6 +36,16 @@ interface PredictResponse {
 
 export async function POST(req: NextRequest) {
   try {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      return NextResponse.json(
+        {
+          error: "BACKEND_URL não configurado no ambiente de produção.",
+        },
+        { status: 503 }
+      );
+    }
+
     const body: PredictRequest = await req.json();
 
     const hasText = body.texto_cliente && body.texto_cliente.trim() !== "";
@@ -38,50 +58,38 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Mock response - simulando classificador
-    const data: PredictResponse = {
-      resultados: [
+    const response = await fetch(`${backendUrl}/predict`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        texto_cliente: body.texto_cliente || "",
+        tipo_produto: body.tipo_produto || undefined,
+        segmento: body.segmento || undefined,
+        regiao: body.regiao || undefined,
+      }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      console.error("[predict] Erro do backend:", error);
+      return NextResponse.json(
         {
-          rank: 1,
-          defeito_sugerido: "Compressor com defeito",
-          confianca: 0.85,
-          confianca_pct: 85,
-          documentacao: "https://suaempresa.com/manuais/compressor.pdf",
-          descricao_llm: "Análise baseada em histórico de ordens de serviço similares.",
-          acao_recomendada_llm: "Inspecionar funcionamento do compressor. Consultar manual técnico.",
+          error: error.detail || "Erro ao processar requisição no backend",
         },
-        {
-          rank: 2,
-          defeito_sugerido: "Termostato com defeito",
-          confianca: 0.72,
-          confianca_pct: 72,
-          documentacao: "https://suaempresa.com/manuais/termostato.pdf",
-          descricao_llm: "Possível falha no sensor de temperatura.",
-          acao_recomendada_llm: "Verificar calibração do termostato.",
-        },
-        {
-          rank: 3,
-          defeito_sugerido: "Evaporador obstruído",
-          confianca: 0.65,
-          confianca_pct: 65,
-          documentacao: "https://suaempresa.com/manuais/evaporador.pdf",
-          descricao_llm: "Possível bloqueio no fluxo de ar.",
-          acao_recomendada_llm: "Realizar limpeza preventiva do evaporador.",
-        },
-      ],
-      texto_analisado: body.texto_cliente || "",
-      total_classes: 15,
-      total_registros: 164,
-      modelo_ativo: "randomforest",
-      sugere_busca: true,
-    };
+        { status: response.status }
+      );
+    }
+
+    const data: PredictResponse = await response.json();
 
     return NextResponse.json(data);
   } catch (error) {
     console.error("[predict] Erro interno:", error);
     return NextResponse.json(
       {
-        error: "Erro ao processar requisição.",
+        error: "Erro ao conectar ao backend de classificação.",
       },
       { status: 500 }
     );
