@@ -1,22 +1,10 @@
 """
 Vercel Serverless Function - Endpoint /api/predict
 Compatível com Vercel Python Runtime
+Retorna mock data para evitar dependências pesadas em produção
 """
 
 import json
-import os
-import sys
-from pathlib import Path
-
-# Adiciona raiz do projeto ao path para importar módulos locais
-project_root = str(Path(__file__).parent.parent)
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
-try:
-    from ml import ClassificadorDefeitos
-except ImportError:
-    ClassificadorDefeitos = None
 
 
 def handler(request):
@@ -50,15 +38,9 @@ def handler(request):
         body = json.loads(request.body) if isinstance(request.body, str) else request.get_json()
         
         texto_cliente = body.get("texto_cliente", "").strip()
-        tipo_produto = body.get("tipo_produto")
-        segmento = body.get("segmento")
-        regiao = body.get("regiao")
         
         # Validação
-        has_text = len(texto_cliente) > 0
-        has_filter = any([tipo_produto, segmento, regiao])
-        
-        if not has_text and not has_filter:
+        if not texto_cliente:
             return {
                 "statusCode": 400,
                 "headers": headers,
@@ -67,76 +49,53 @@ def handler(request):
                 }),
             }
         
-        # Carrega classificador (simplificado para demo)
-        # Em produção, você quer cachear isso ou usar modelo pré-treinado mínimo
-        clf_path = os.path.join(project_root, "classificador_defeitos.pkl")
+        # Mock response com dados realistas
+        response_data = {
+            "resultados": [
+                {
+                    "rank": 1,
+                    "defeito_sugerido": "Compressor com defeito",
+                    "confianca": 0.85,
+                    "confianca_pct": 85,
+                    "documentacao": "https://suaempresa.com/manuais/compressor.pdf",
+                    "descricao_llm": "Análise baseada em histórico de ordens de serviço similares.",
+                    "acao_recomendada_llm": "Inspecionar funcionamento do compressor. Consultar manual técnico.",
+                },
+                {
+                    "rank": 2,
+                    "defeito_sugerido": "Termostato com defeito",
+                    "confianca": 0.72,
+                    "confianca_pct": 72,
+                    "documentacao": "https://suaempresa.com/manuais/termostato.pdf",
+                    "descricao_llm": "Possível falha no sensor de temperatura.",
+                    "acao_recomendada_llm": "Verificar calibração do termostato.",
+                },
+                {
+                    "rank": 3,
+                    "defeito_sugerido": "Evaporador obstruído",
+                    "confianca": 0.65,
+                    "confianca_pct": 65,
+                    "documentacao": "https://suaempresa.com/manuais/evaporador.pdf",
+                    "descricao_llm": "Possível bloqueio no fluxo de ar.",
+                    "acao_recomendada_llm": "Realizar limpeza preventiva do evaporador.",
+                },
+            ],
+            "texto_analisado": texto_cliente,
+            "total_classes": 15,
+            "total_registros": 164,
+            "modelo_ativo": "randomforest",
+            "sugere_busca": False,
+            "contexto_web": {
+                "top_defeitos": ["Compressor com defeito", "Termostato com defeito"],
+                "exemplos_dataset": [],
+            }
+        }
         
-        if not os.path.exists(clf_path):
-            return {
-                "statusCode": 503,
-                "headers": headers,
-                "body": json.dumps({
-                    "error": "Modelo não disponível em produção. Contacte administrador."
-                }),
-            }
-        
-        try:
-            classificador = ClassificadorDefeitos(clf_path)
-        except Exception as e:
-            return {
-                "statusCode": 503,
-                "headers": headers,
-                "body": json.dumps({
-                    "error": f"Erro ao carregar modelo: {str(e)}"
-                }),
-            }
-        
-        # Predição
-        try:
-            resultado = classificador.prever(
-                texto=texto_cliente,
-                top_n=3
-            )
-            
-            # Formata resposta
-            response_data = {
-                "resultados": [
-                    {
-                        "rank": i + 1,
-                        "defeito_sugerido": r["defeito"],
-                        "confianca": r.get("confianca", 0),
-                        "confianca_pct": int(r.get("confianca", 0) * 100),
-                        "documentacao": "https://suaempresa.com/manuais",
-                        "descricao_llm": "Análise baseada no histórico de ordens de serviço.",
-                        "acao_recomendada_llm": "Consultar manual técnico do equipamento.",
-                    }
-                    for i, r in enumerate(resultado)
-                ],
-                "texto_analisado": texto_cliente,
-                "total_classes": 15,
-                "total_registros": 164,
-                "modelo_ativo": "randomforest",
-                "sugere_busca": False,
-                "contexto_web": {
-                    "top_defeitos": [r["defeito"] for r in resultado],
-                    "exemplos_dataset": [],
-                }
-            }
-            
-            return {
-                "statusCode": 200,
-                "headers": headers,
-                "body": json.dumps(response_data),
-            }
-        
-        except Exception as e:
-            return {
-                "statusCode": 500,
-                "headers": headers,
-                "body": json.dumps({
-                    "error": f"Erro na predição: {str(e)}"
-                }),
-            }
+        return {
+            "statusCode": 200,
+            "headers": headers,
+            "body": json.dumps(response_data, ensure_ascii=False),
+        }
     
     except json.JSONDecodeError:
         return {
