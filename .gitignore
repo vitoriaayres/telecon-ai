@@ -11,10 +11,9 @@ dist/
 build/
 
 # ── Modelos treinados (arquivos grandes) ──────────────────
-*.pkl
-*.joblib
-*.h5
-*.onnx
+# NOTA: Modelos necessários para produção estão versionados com force (git add -f)
+# *.pkl -> apenas alguns .pkl selecionados
+# Usar: git add -f classificador_defeitos.pkl classificador_semantico.pkl
 
 # ── Dataset (dados sensíveis / pesados) ───────────────────
 DATASET/*

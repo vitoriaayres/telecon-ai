@@ -21,14 +21,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia código da aplicação
 COPY api.py .
 COPY ml.py .
-COPY trainamento_modelo.py .
-COPY classificador.py .
-COPY azure_ml_integration.py .
 COPY breakfix_web_agent.py .
 COPY DATASET ./DATASET
 
-# Treina modelo local se não existir
-RUN python -c "import os; os.path.exists('classificador_defeitos.pkl') or __import__('trainamento_modelo').treinar_e_salvar_modelo()"
+# Copia modelos pré-treinados (necessários para execução)
+COPY classificador_defeitos.pkl .
+COPY classificador_defeitos_classes.pkl .
+COPY classificador_semantico.pkl . || true
 
 # Expõe porta
 EXPOSE 8000
