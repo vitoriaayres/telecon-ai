@@ -1,6 +1,11 @@
 {
   "framework": "nextjs",
-  "installCommand": "npm install --prefix telecon-ai",
+  "installCommand": "npm install --prefix telecon-ai && pip install -r requirements.txt",
   "buildCommand": "npm run build --prefix telecon-ai",
-  "outputDirectory": "telecon-ai/.next"
+  "outputDirectory": "telecon-ai/.next",
+  "functions": {
+    "api/**/*.py": {
+      "runtime": "python3.11"
+    }
+  }
 }
