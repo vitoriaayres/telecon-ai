@@ -24,9 +24,8 @@ COPY ml.py .
 COPY trainamento_modelo.py .
 COPY classificador.py .
 COPY azure_ml_integration.py .
-
-# Copia configuração Azure
-COPY .env.azure .
+COPY breakfix_web_agent.py .
+COPY DATASET ./DATASET
 
 # Treina modelo local se não existir
 RUN python -c "import os; os.path.exists('classificador_defeitos.pkl') or __import__('trainamento_modelo').treinar_e_salvar_modelo()"
@@ -36,7 +35,7 @@ EXPOSE 8000
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health')"
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
 
 # Comando para iniciar API
 CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
