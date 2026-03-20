@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       total_classes: 15,
       total_registros: 164,
       modelo_ativo: "randomforest",
-      sugere_busca: false,
+      sugere_busca: true,
     };
 
     return NextResponse.json(data);
