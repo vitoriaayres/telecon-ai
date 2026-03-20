@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+function getBackendUrl() {
+  const configured = process.env.BACKEND_URL?.trim();
+  if (configured) return configured;
+
+  // Em dev local, mantém conveniência com FastAPI rodando na porta 8000.
+  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+
+  return null;
+}
 
 interface WebSearchRequest {
   texto_cliente: string;
@@ -13,6 +21,16 @@ interface WebSearchRequest {
 
 export async function POST(req: NextRequest) {
   try {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      return NextResponse.json(
+        {
+          error: "BACKEND_URL não configurado no ambiente de produção.",
+        },
+        { status: 503 }
+      );
+    }
+
     const body: WebSearchRequest = await req.json();
 
     if (!body.texto_cliente || body.texto_cliente.trim() === "") {
@@ -36,7 +54,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const response = await fetch(`${BACKEND_URL}/web-search`, {
+    const response = await fetch(`${backendUrl}/web-search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

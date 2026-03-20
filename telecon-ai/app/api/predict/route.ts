@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+function getBackendUrl() {
+  const configured = process.env.BACKEND_URL?.trim();
+  if (configured) return configured;
+
+  // Em dev local, mantém conveniência com FastAPI rodando na porta 8000.
+  if (process.env.NODE_ENV !== "production") return "http://localhost:8000";
+
+  return null;
+}
 
 interface PredictRequest {
   texto_cliente: string;
@@ -28,6 +36,16 @@ interface PredictResponse {
 
 export async function POST(req: NextRequest) {
   try {
+    const backendUrl = getBackendUrl();
+    if (!backendUrl) {
+      return NextResponse.json(
+        {
+          error: "BACKEND_URL não configurado no ambiente de produção.",
+        },
+        { status: 503 }
+      );
+    }
+
     const body: PredictRequest = await req.json();
 
     const hasText = body.texto_cliente && body.texto_cliente.trim() !== "";
@@ -42,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     // ── Faz proxy para o backend FastAPI ──
     // Envia todos os filtros disponíveis, o backend decide se usa ou não
-    const response = await fetch(`${BACKEND_URL}/predict`, {
+    const response = await fetch(`${backendUrl}/predict`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -74,7 +92,7 @@ export async function POST(req: NextRequest) {
     console.error("[predict] Erro interno:", error);
     return NextResponse.json(
       {
-        error: "Erro ao conectar ao backend. Verifique se o servidor está rodando em localhost:8000",
+        error: "Erro ao conectar ao backend de classificação.",
       },
       { status: 500 }
     );

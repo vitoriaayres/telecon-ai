@@ -34,7 +34,7 @@ async function fetchClassification(
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));
-    throw new Error(err.detail ?? `Erro ${response.status}`);
+    throw new Error(err.error ?? err.detail ?? `Erro ${response.status}`);
   }
 
   const data = await response.json();
