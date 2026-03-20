@@ -17,7 +17,9 @@ build/
 *.onnx
 
 # ── Dataset (dados sensíveis / pesados) ───────────────────
-DATASET/
+DATASET/*
+!DATASET/dataset_1.csv
+!DATASET/dataset_2.csv
 
 # ── Variáveis de ambiente e segredos ─────────────────────
 .env
