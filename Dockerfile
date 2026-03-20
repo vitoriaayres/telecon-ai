@@ -27,7 +27,6 @@ COPY DATASET ./DATASET
 # Copia modelos pré-treinados (necessários para execução)
 COPY classificador_defeitos.pkl .
 COPY classificador_defeitos_classes.pkl .
-COPY classificador_semantico.pkl . || true
 
 # Expõe porta
 EXPOSE 8000
