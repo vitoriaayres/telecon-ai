@@ -50,3 +50,4 @@ desktop.ini
 mlruns/
 outputs/
 .azureml/
+.env
