@@ -22,7 +22,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY api.py .
 COPY ml.py .
 COPY breakfix_web_agent.py .
-COPY DATASET ./DATASET
 
 # Copia modelos pré-treinados (necessários para execução)
 COPY classificador_defeitos.pkl .
