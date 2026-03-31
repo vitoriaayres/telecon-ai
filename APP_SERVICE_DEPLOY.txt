@@ -1,0 +1,194 @@
+========================================
+  AZURE APP SERVICE DEPLOYMENT
+  Works Where Static Web Apps Doesn't!
+========================================
+
+WHY THIS WORKS FOR YOU:
+- ✅ 60+ regions available (vs 30 for Static Web Apps)
+- ✅ Your Dockerfile already works with this
+- ✅ FREE tier (F1) or Basic $13/month (B1)
+- ✅ Can host frontend + backend
+- ✅ Better region support
+- ✅ Production-ready
+
+
+STEP 1: CHECK YOUR AVAILABLE REGIONS (1 min)
+=============================================
+
+Run this command:
+cd C:\Users\Interfocus\Desktop\UNIMAR\telecontrol
+check_app_service_regions.bat
+
+This shows ALL regions where you CAN deploy!
+
+Common regions that usually work:
+- Brazil South (if you're in Brazil)
+- East US / East US 2
+- West Europe
+- Southeast Asia
+- Japan East
+- Australia East
+
+
+STEP 2: DEPLOY BACKEND (5 minutes)
+===================================
+
+1. Login to Azure:
+   az login
+
+2. Create resource group (if you don't have one):
+   az group create ^
+     --name telecontrol-rg ^
+     --location "brazilsouth"
+   
+   (Replace "brazilsouth" with YOUR region from Step 1)
+
+3. Create App Service Plan:
+   az appservice plan create ^
+     --name telecontrol-plan ^
+     --resource-group telecontrol-rg ^
+     --location "brazilsouth" ^
+     --is-linux ^
+     --sku B1
+
+4. Create Web App for Backend:
+   az webapp create ^
+     --resource-group telecontrol-rg ^
+     --plan telecontrol-plan ^
+     --name telecontrol-api-unique123 ^
+     --deployment-container-image-name python:3.11-slim
+   
+   (Change "unique123" to something unique for you!)
+
+5. Configure for Docker deployment:
+   az webapp config container set ^
+     --name telecontrol-api-unique123 ^
+     --resource-group telecontrol-rg ^
+     --docker-custom-image-name python:3.11-slim
+
+6. Deploy your code:
+   cd C:\Users\Interfocus\Desktop\UNIMAR\telecontrol
+   az webapp up ^
+     --name telecontrol-api-unique123 ^
+     --resource-group telecontrol-rg ^
+     --runtime "PYTHON:3.11"
+
+7. Add environment variables:
+   az webapp config appsettings set ^
+     --name telecontrol-api-unique123 ^
+     --resource-group telecontrol-rg ^
+     --settings ^
+       AZURE_OPENAI_API_KEY=your_key_here ^
+       AZURE_OPENAI_ENDPOINT=your_endpoint_here ^
+       AZURE_OPENAI_DEPLOYMENT_NAME=your_deployment_here
+
+
+Your backend will be at:
+https://telecontrol-api-unique123.azurewebsites.net
+
+
+STEP 3: DEPLOY FRONTEND (5 minutes)
+====================================
+
+1. Build your Next.js app:
+   cd telecon-ai
+   npm run build
+
+2. Create Web App for Frontend:
+   az webapp create ^
+     --resource-group telecontrol-rg ^
+     --plan telecontrol-plan ^
+     --name telecontrol-frontend-unique123 ^
+     --runtime "NODE:20-lts"
+
+3. Deploy frontend:
+   az webapp up ^
+     --name telecontrol-frontend-unique123 ^
+     --resource-group telecontrol-rg ^
+     --html
+
+4. Add backend URL as environment variable:
+   az webapp config appsettings set ^
+     --name telecontrol-frontend-unique123 ^
+     --resource-group telecontrol-rg ^
+     --settings ^
+       BACKEND_URL=https://telecontrol-api-unique123.azurewebsites.net
+
+
+Your frontend will be at:
+https://telecontrol-frontend-unique123.azurewebsites.net
+
+
+STEP 4: TEST (2 minutes)
+=========================
+
+1. Test backend:
+   curl https://telecontrol-api-unique123.azurewebsites.net/health
+
+2. Test frontend:
+   Open browser: https://telecontrol-frontend-unique123.azurewebsites.net
+
+3. Test prediction:
+   Enter: "celular não liga tela preta"
+
+
+========================================
+
+ALTERNATIVE: SIMPLER DEPLOYMENT SCRIPT
+=======================================
+
+I can create a ONE-CLICK script that does everything!
+
+Just tell me:
+1. What region works for you? (run check_app_service_regions.bat first)
+2. Do you want me to create the automated script?
+
+
+========================================
+
+COSTS:
+======
+
+FREE TIER (F1):
+- $0/month
+- 60 min/day CPU
+- 1 GB memory
+- Good for testing
+
+BASIC TIER (B1):
+- ~$13/month
+- Always on
+- 1.75 GB memory  
+- Production ready
+
+RECOMMENDATION: Start with FREE (F1), upgrade to Basic (B1) if needed
+
+
+========================================
+
+WHAT HAPPENS TO YOUR CURRENT SETUP?
+====================================
+
+Container Instance backend:
+- ❌ Can delete (save money)
+- ✅ Or keep as backup
+
+Vercel frontend:
+- ❌ Can delete (you want Azure-only)
+- ✅ Or keep as staging
+
+
+========================================
+
+NEXT STEP:
+==========
+
+1. Run: check_app_service_regions.bat
+2. Tell me which region works for you
+3. I'll create a ONE-CLICK deployment script
+4. Deploy in 10 minutes
+5. Everything working on Azure!
+
+Ready? Run check_app_service_regions.bat now!
+
+========================================

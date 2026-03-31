@@ -1,0 +1,197 @@
+========================================
+  AZURE-ONLY DEPLOYMENT GUIDE
+  No Vercel, No Oracle - Just Azure
+========================================
+
+OPTION 1: AZURE STATIC WEB APPS (Recommended)
+==============================================
+
+WHY THIS IS BEST:
+- ✅ Frontend + Backend in ONE place
+- ✅ Available in MORE regions (solves your region problem)
+- ✅ FREE tier (100 GB bandwidth/month)
+- ✅ No CORS issues
+- ✅ Auto HTTPS
+- ✅ Custom domains free
+
+COST: $0 (Free tier) or ~$9/month (Standard)
+
+
+QUICK SETUP (10 minutes):
+--------------------------
+
+1. Install Azure Static Web Apps CLI:
+   npm install -g @azure/static-web-apps-cli
+
+2. Login to Azure:
+   az login
+
+3. Create Static Web App:
+   cd telecon-ai
+   az staticwebapp create ^
+     --name telecontrol-app ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --source . ^
+     --location "East US 2" ^
+     --branch main ^
+     --app-location "/" ^
+     --api-location "api" ^
+     --output-location "out"
+
+4. Deploy:
+   swa deploy --app-location telecon-ai
+
+5. Backend stays in your Container Instance (already working!)
+
+
+REGIONS WHERE IT WORKS:
+- East US 2
+- West Europe
+- Central US
+- West US 2
+- East Asia
+- (Many more available!)
+
+
+========================================
+
+OPTION 2: AZURE APP SERVICE (More Control)
+===========================================
+
+WHY USE THIS:
+- ✅ More regions than Container Instances
+- ✅ Better for production apps
+- ✅ Can run Docker containers
+- ✅ Easy scaling
+- ✅ Free/Shared tier available
+
+COST: $0 (Free tier) or ~$13/month (Basic B1)
+
+
+QUICK SETUP (15 minutes):
+--------------------------
+
+1. Create App Service Plan:
+   az appservice plan create ^
+     --name telecontrol-plan ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --location "East US" ^
+     --is-linux ^
+     --sku B1
+
+2. Deploy Backend (FastAPI):
+   cd C:\Users\Interfocus\Desktop\UNIMAR\telecontrol
+   
+   az webapp create ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --plan telecontrol-plan ^
+     --name telecontrol-api ^
+     --deployment-container-image-name telecontrol-api:latest
+   
+   az webapp config appsettings set ^
+     --name telecontrol-api ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --settings AZURE_OPENAI_API_KEY=your_key
+
+3. Deploy Frontend (Next.js):
+   cd telecon-ai
+   npm run build
+   
+   az webapp up ^
+     --name telecontrol-frontend ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --location "East US" ^
+     --html
+
+4. Connect them:
+   Update .env.local:
+   BACKEND_URL=https://telecontrol-api.azurewebsites.net
+
+
+AVAILABLE REGIONS FOR APP SERVICE:
+- East US
+- West US
+- Brazil South
+- Central US
+- North Europe
+- West Europe
+- Southeast Asia
+- (60+ regions available!)
+
+
+========================================
+
+OPTION 3: KEEP CURRENT + AZURE STATIC WEB APPS
+===============================================
+
+WHAT YOU HAVE NOW:
+- Backend: Azure Container Instance (working but can't connect)
+- Frontend: Vercel (404 error)
+
+WHAT TO CHANGE:
+- ✅ Keep backend Container Instance
+- ✅ Move frontend to Azure Static Web Apps
+- ✅ Fix CORS connection
+
+
+QUICK SETUP (5 minutes):
+-------------------------
+
+1. Deploy frontend to Azure Static Web Apps:
+   cd telecon-ai
+   
+   az staticwebapp create ^
+     --name telecontrol-frontend ^
+     --resource-group YOUR_RESOURCE_GROUP ^
+     --source . ^
+     --location "East US 2" ^
+     --app-location "/" ^
+     --output-location "out"
+
+2. Add environment variable in Azure Portal:
+   - Go to Static Web App
+   - Settings → Configuration
+   - Add: BACKEND_URL = http://4.228.41.39:8000
+
+3. Redeploy:
+   swa deploy
+
+4. Fix backend CORS (already done in api.py!)
+
+5. Restart your Container Instance
+
+
+========================================
+
+WHICH SHOULD YOU CHOOSE?
+=========================
+
+🏆 BEST FOR YOU: Option 1 (Azure Static Web Apps)
+
+REASONS:
+1. Solves region problem (available in 30+ regions)
+2. Completely free (Free tier)
+3. Simplest setup
+4. No CORS issues
+5. Everything in Azure (your requirement)
+
+AVOID:
+- ❌ Vercel (not Azure)
+- ❌ Container Instances for frontend (limited regions)
+- ❌ Manual VM setup (complex)
+
+
+========================================
+
+NEXT STEPS:
+===========
+
+1. Tell me which option you prefer
+2. I'll create the exact commands for you
+3. We deploy in 10 minutes
+4. Test and verify everything works
+
+Want me to set up Option 1 (Azure Static Web Apps)?
+Just say "yes, option 1" and I'll do it!
+
+========================================

@@ -1,31 +1,33 @@
-version: '3.8'
+ version: '3.8'
 
-services:
-  telecontrol-api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
-    environment:
-      - AZURE_SUBSCRIPTION_ID=${AZURE_SUBSCRIPTION_ID}
-      - AZURE_RESOURCE_GROUP=${AZURE_RESOURCE_GROUP}
-      - AZURE_ML_WORKSPACE_NAME=${AZURE_ML_WORKSPACE_NAME}
-      - AZURE_STORAGE_ACCOUNT_NAME=${AZURE_STORAGE_ACCOUNT_NAME}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-    volumes:
-      - ./data:/app/data:ro
-      - ./feedback_log.json:/app/feedback_log.json
-    networks:
-      - telecontrol-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 5s
+ services:
+   backend:
+     build: .
+     ports:
+       - "8000:8000"
+     environment:
+       - AZURE_OPENAI_ENDPOINT=https://breakfixtesteunimar.cognitiveservices.azure.com/
+       - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY}
+       - AZURE_OPENAI_MODEL=gpt-4.1-mini-2
+     command: python api.py
 
-networks:
-  telecontrol-network:
-    driver: bridge
+   frontend:
+     build:
+       context: ./telecon-ai
+       dockerfile: Dockerfile
+     ports:
+       - "3000:3000"
+     depends_on:
+       - backend
+     environment:
+       - NEXT_PUBLIC_API_URL=http://backend:8000
+
+   nginx:
+     image: nginx:alpine
+     ports:
+       - "80:80"
+     volumes:
+       - ./nginx.conf:/etc/nginx/nginx.conf
+     depends_on:
+       - backend
+       - frontend

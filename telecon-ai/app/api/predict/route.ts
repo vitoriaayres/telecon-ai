@@ -37,7 +37,10 @@ interface PredictResponse {
 export async function POST(req: NextRequest) {
   try {
     const backendUrl = getBackendUrl();
+    console.log("[predict] NODE_ENV:", process.env.NODE_ENV, "| backendUrl:", backendUrl);
+    
     if (!backendUrl) {
+      console.error("[predict] BACKEND_URL não configurado");
       return NextResponse.json(
         {
           error: "BACKEND_URL não configurado no ambiente de produção.",
@@ -47,6 +50,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body: PredictRequest = await req.json();
+    console.log("[predict] Requisição recebida:", body);
 
     const hasText = body.texto_cliente && body.texto_cliente.trim() !== "";
     const hasFilter = body.tipo_produto || body.segmento || body.regiao;
@@ -58,6 +62,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    console.log("[predict] Chamando backend em:", `${backendUrl}/predict`);
+    
     const response = await fetch(`${backendUrl}/predict`, {
       method: "POST",
       headers: {
@@ -71,9 +77,17 @@ export async function POST(req: NextRequest) {
       }),
     });
 
+    console.log("[predict] Resposta do backend - Status:", response.status, "OK:", response.ok);
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      console.error("[predict] Erro do backend:", error);
+      const text = await response.text();
+      console.error("[predict] Erro do backend (text):", text);
+      let error = {};
+      try {
+        error = JSON.parse(text);
+      } catch (e) {
+        error = { detail: text || "Erro desconhecido do backend" };
+      }
       return NextResponse.json(
         {
           error: error.detail || "Erro ao processar requisição no backend",
@@ -83,6 +97,7 @@ export async function POST(req: NextRequest) {
     }
 
     const data: PredictResponse = await response.json();
+    console.log("[predict] Resposta sucesso:", data?.resultados?.length, "resultados");
 
     return NextResponse.json(data);
   } catch (error) {

@@ -1,0 +1,156 @@
+================================================================================
+                       🚀 QUICK ACTION PLAN
+================================================================================
+
+Run these steps IN ORDER:
+
+================================================================================
+STEP 1: Install Missing Python Packages (2 minutes)
+================================================================================
+
+cd C:\Users\Interfocus\Desktop\UNIMAR\telecontrol
+install_missing_deps.bat
+
+This will install:
+- scikit-learn (for ML model)
+- langchain packages (for RAG system)
+
+Wait for it to complete, then continue.
+
+================================================================================
+STEP 2: Check Azure Backend Status (1 minute)
+================================================================================
+
+1. Open: https://portal.azure.com
+2. Search: "Container Instances"
+3. Find your container (telecontrol or similar)
+4. Check STATUS - should be "Running"
+5. Check IP ADDRESS - should be 4.228.41.39
+
+If NOT running:
+   → Click "Start" button
+   → Wait 2-3 minutes
+   → Continue to Step 3
+
+If IP is DIFFERENT:
+   → Note the new IP
+   → Tell me so I can update configurations
+
+================================================================================
+STEP 3: Update Azure Backend Environment (3 minutes)
+================================================================================
+
+In Azure Portal, your Container Instance:
+
+1. Go to: Settings → Environment variables
+2. Find: CORS_ORIGINS
+3. Update to: http://localhost:3000,https://telecontrol-ai.vercel.app,https://*.vercel.app
+
+If CORS_ORIGINS doesn't exist, ADD it:
+   - Name: CORS_ORIGINS
+   - Value: http://localhost:3000,https://telecontrol-ai.vercel.app,https://*.vercel.app
+   - Click "Save"
+
+4. RESTART the container:
+   - Overview tab → Click "Restart"
+   - Wait 2-3 minutes
+
+================================================================================
+STEP 4: Fix Vercel Deployment (5 minutes)
+================================================================================
+
+1. Go to: https://vercel.com/dashboard
+2. Find project: "telecon-ai"
+3. Click on it
+
+4. Go to: Settings → Environment Variables
+5. Add these variables (if not present):
+   
+   Variable 1:
+   - Name: BACKEND_URL
+   - Value: http://4.228.41.39:8000
+   - Environments: Production, Preview, Development
+   - Click "Save"
+   
+   Variable 2:
+   - Name: NEXT_PUBLIC_API_URL  
+   - Value: http://4.228.41.39:8000
+   - Environments: Production, Preview, Development
+   - Click "Save"
+
+6. Go to: Deployments
+7. Click the three dots (•••) on the latest deployment
+8. Click "Redeploy"
+9. Wait 2-3 minutes for build to complete
+
+================================================================================
+STEP 5: Verify Everything Works (2 minutes)
+================================================================================
+
+cd C:\Users\Interfocus\Desktop\UNIMAR\telecontrol
+verify.bat
+
+Expected result: ALL GREEN CHECKMARKS! ✅
+
+================================================================================
+STEP 6: Test in Browser (1 minute)
+================================================================================
+
+1. Open: https://telecontrol-ai.vercel.app
+2. Enter: "celular não liga tela preta"
+3. Click: "Analyze"
+4. Expected: Predictions with confidence scores appear
+
+================================================================================
+                           🎯 TOTAL TIME: ~15 MINUTES
+================================================================================
+
+If you encounter any issues:
+1. Take a screenshot of the error
+2. Tell me which step failed
+3. I'll help you fix it immediately!
+
+================================================================================
+                              ⚡ SHORTCUTS
+================================================================================
+
+Already did some steps? Skip to where you need:
+
+✅ Dependencies installed? → Skip to Step 2
+✅ Azure backend running? → Skip to Step 3  
+✅ Environment vars set? → Skip to Step 5
+
+================================================================================
+                           🆘 QUICK HELP
+================================================================================
+
+Can't find Azure Portal?
+→ https://portal.azure.com
+
+Can't find Vercel dashboard?
+→ https://vercel.com/dashboard
+
+Forgot your Azure container name?
+→ Search "Container Instances" in Azure Portal
+
+Dependencies won't install?
+→ Run as administrator: Right-click Command Prompt → "Run as administrator"
+
+================================================================================
+                         🎉 AFTER COMPLETING ALL STEPS
+================================================================================
+
+You'll have:
+✅ All Python dependencies installed
+✅ Azure backend running and accessible
+✅ CORS configured correctly
+✅ Vercel frontend deployed and working
+✅ Complete end-to-end system functional
+
+Your app will be live at: https://telecontrol-ai.vercel.app
+
+================================================================================
+
+START WITH STEP 1 NOW! 🚀
+
+Run: install_missing_deps.bat

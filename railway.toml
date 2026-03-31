@@ -1,0 +1,74 @@
+# Railway Configuration File
+# This file configures how Railway.app deploys and runs your telecontrol backend
+
+# Project Configuration
+[project]
+name = "telecontrol"
+description = "Automatic defect classifier with ML + LLM"
+
+# Build Configuration
+[build]
+# Use Python 3.11 slim image
+builder = "dockerfile"
+dockerfile = "./Dockerfile"
+
+# Specify Python version
+[build.env]
+PYTHON_VERSION = "3.11"
+
+# Runtime Configuration
+[run]
+# Command to start the API
+cmd = "uvicorn api:app --host 0.0.0.0 --port 8000"
+
+# Port configuration
+port = 8000
+
+# Health check
+healthcheck = {
+  cmd = "curl -f http://localhost:8000/health || exit 1",
+  interval = 30,
+  timeout = 3,
+  retries = 3,
+  start_period = 5
+}
+
+# Environment Variables (these should be set in Railway dashboard, not here)
+# Use .env.example as reference
+[env]
+# These are DEFAULTS - Override in Railway dashboard
+CORS_ORIGINS = "http://localhost:3000"
+# Azure keys must be set in Railway dashboard:
+# AZURE_OPENAI_ENDPOINT = "https://..."
+# AZURE_OPENAI_API_KEY = "..."
+# AZURE_OPENAI_DEPLOYMENT_NAME = "gpt-4-mini"
+# AZURE_OPENAI_API_VERSION = "2024-08-01-preview"
+
+# Scaling Configuration
+[scaling]
+# Min/max instances
+min_instances = 1
+max_instances = 3
+
+# Resource limits
+cpu = 512       # 0.5 CPU
+memory = 512    # 512 MB RAM
+
+# If you need more:
+# cpu = 1024      # 1 CPU
+# memory = 1024   # 1 GB RAM
+
+# Networking
+[networking]
+# Port exposure
+ports = [8000]
+
+# Service volumes (for persistent storage, optional)
+# [volumes]
+# feedback_log = "/app/feedback_log.json"
+# data = "/app/DATASET"
+
+# Build optimization
+[docker]
+# Use layer caching
+cache = true

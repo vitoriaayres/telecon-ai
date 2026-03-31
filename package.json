@@ -1,5 +1,10 @@
 {
   "name": "telecontrol-root",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix telecon-ai run dev",
+    "build": "npm --prefix telecon-ai run build",
+    "start": "npm --prefix telecon-ai run start"
+  }
 }

@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import asyncio
 import threading
+from openai import AzureOpenAI
 from ml import ClassificadorDefeitos
 from typing import List
 from dotenv import load_dotenv
@@ -18,11 +19,8 @@ load_dotenv()
 
 app = FastAPI(title="API Break FIX - Classificador de Defeitos")
 
-# ── Constantes ────────────────────────────────────────────────────────────────
-TOTAL_REGISTROS_TREINO = 164 # TODO: Tornar dinâmico a partir dos metadados do modelo
-
 # CORS - permite chamadas do frontend Next.js
-origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000")
+origins_str = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000,https://telecontrol-ai.vercel.app,https://*.vercel.app")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins_str.split(","),
@@ -60,15 +58,34 @@ if modelo_tipo == "nenhum":
     except Exception as e:
         print(f"[AVISO] Erro ao carregar modelo: {e}")
 
-# ── Enriquecimento local (sem Azure/LLM externo) ────────────────────────────
-print("[INFO] Enriquecimento LLM externo desativado — usando textos locais")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "").strip()
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY", "").strip()
+AZURE_OPENAI_DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "").strip()
+AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview").strip()
+
+llm_client = None
+if AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY and AZURE_OPENAI_DEPLOYMENT_NAME:
+    try:
+        llm_client = AzureOpenAI(
+            azure_endpoint=AZURE_OPENAI_ENDPOINT,
+            api_key=AZURE_OPENAI_API_KEY,
+            api_version=AZURE_OPENAI_API_VERSION,
+        )
+        print(f"[OK] Enriquecimento LLM ativo via Azure OpenAI ({AZURE_OPENAI_DEPLOYMENT_NAME})")
+    except Exception as e:
+        print(f"[AVISO] Falha ao inicializar Azure OpenAI: {e}")
+        llm_client = None
+else:
+    print("[INFO] Azure OpenAI não configurado. Usando enriquecimento local.")
+
+LLM_PROVIDER = "azure-openai" if llm_client else "local-fallback"
 
 
 def _fallback_enriquecimento(candidatos: list) -> list:
     """Gera textos locais quando LLM externo não está disponível."""
     return [
         {
-            "descricao": f"Possível causa identificada com base em ordens de serviço anteriores com sintoma similar.",
+            "descricao": "Possível causa identificada com base em ordens de serviço anteriores com sintoma similar.",
             "acao_recomendada": f"Inspecionar o componente '{c['defeito']}'. Consultar manual técnico específico do equipamento."
         }
         for c in candidatos
@@ -81,7 +98,79 @@ def enriquecer_todos_com_llm(reclamacao: str, candidatos: list) -> list:
     candidatos: list[dict] com chaves 'defeito' e 'confianca_pct'
     Retorna: list[dict] com chaves 'descricao' e 'acao_recomendada'
     """
-    return _fallback_enriquecimento(candidatos)
+    if not llm_client:
+        return _fallback_enriquecimento(candidatos)
+
+    try:
+        prompt_sistema = (
+            "Voce e um especialista tecnico em refrigeracao comercial. "
+            "Para cada candidato de defeito, gere: descricao tecnica curta e acao recomendada objetiva. "
+            "Responda APENAS em JSON valido no formato: "
+            "[{\"defeito\":\"...\",\"descricao\":\"...\",\"acao_recomendada\":\"...\"}]"
+        )
+        prompt_usuario = {
+            "reclamacao": reclamacao,
+            "candidatos": candidatos,
+        }
+
+        resp = llm_client.chat.completions.create(
+            model=AZURE_OPENAI_DEPLOYMENT_NAME,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": prompt_sistema},
+                {"role": "user", "content": json.dumps(prompt_usuario, ensure_ascii=False)},
+            ],
+        )
+
+        content = (resp.choices[0].message.content or "").strip()
+
+        try:
+            parsed = json.loads(content)
+        except json.JSONDecodeError:
+            # Alguns modelos podem envolver o JSON com texto adicional.
+            inicio = content.find("[")
+            fim = content.rfind("]")
+            if inicio != -1 and fim != -1 and fim > inicio:
+                parsed = json.loads(content[inicio : fim + 1])
+            else:
+                raise
+
+        if not isinstance(parsed, list):
+            raise ValueError("Resposta da LLM nao retornou lista")
+
+        por_defeito = {
+            str(item.get("defeito", "")).strip().lower(): item
+            for item in parsed
+            if isinstance(item, dict)
+        }
+
+        normalizados = []
+        for idx, c in enumerate(candidatos):
+            chave = str(c.get("defeito", "")).strip().lower()
+            item_por_posicao = parsed[idx] if idx < len(parsed) and isinstance(parsed[idx], dict) else {}
+            item = item_por_posicao or por_defeito.get(chave, {})
+            normalizados.append(
+                {
+                    "descricao": str(item.get("descricao", "")).strip()
+                    or "Possivel causa identificada com base em sintomas similares.",
+                    "acao_recomendada": str(item.get("acao_recomendada", "")).strip()
+                    or f"Inspecionar o componente '{c.get('defeito', '')}' e validar em bancada.",
+                }
+            )
+
+        return normalizados
+
+    except Exception as e:
+        print(f"[AVISO] Enriquecimento LLM indisponivel, usando fallback local: {e}")
+        return _fallback_enriquecimento(candidatos)
+
+
+def _read_csv_robusto(caminho: str, usecols: list[str] | None = None) -> pd.DataFrame:
+    """Lê CSV tolerando linhas malformadas para não perder todo o dataset."""
+    try:
+        return pd.read_csv(caminho, usecols=usecols)
+    except Exception:
+        return pd.read_csv(caminho, usecols=usecols, engine="python", on_bad_lines="skip")
 
 
 FEEDBACK_LOG = []
@@ -164,7 +253,7 @@ def _carregar_contexto_dataset() -> pd.DataFrame:
 
     d1_path = os.path.join("DATASET", "dataset_1.csv")
     if os.path.exists(d1_path):
-        d1 = pd.read_csv(d1_path, usecols=["descricao_defeito_reclamado", "descricao_defeito_constatado_ref"])
+        d1 = _read_csv_robusto(d1_path, usecols=["descricao_defeito_reclamado", "descricao_defeito_constatado_ref"])
         d1 = d1.rename(
             columns={
                 "descricao_defeito_reclamado": "reclamado",
@@ -175,13 +264,16 @@ def _carregar_contexto_dataset() -> pd.DataFrame:
 
     d2_path = os.path.join("DATASET", "dataset_2.csv")
     if os.path.exists(d2_path):
-        d2 = pd.read_csv(d2_path, usecols=["defeito_reclamado_descricao", "defeito_constatado_descricao"])
-        d2 = d2.rename(
-            columns={
-                "defeito_reclamado_descricao": "reclamado",
-                "defeito_constatado_descricao": "constatado",
-            }
+        d2 = _read_csv_robusto(
+            d2_path,
+            usecols=["descricao_combinada", "defeito_reclamado_descricao", "defeito_constatado_descricao"],
         )
+        d2["reclamado"] = d2["defeito_reclamado_descricao"].where(
+            d2["defeito_reclamado_descricao"].notna() & (d2["defeito_reclamado_descricao"].astype(str).str.strip() != ""),
+            other=d2["descricao_combinada"],
+        )
+        d2["constatado"] = d2["defeito_constatado_descricao"]
+        d2 = d2[["reclamado", "constatado"]]
         frames.append(d2)
 
     if not frames:
@@ -194,6 +286,7 @@ def _carregar_contexto_dataset() -> pd.DataFrame:
 
 
 DATASET_CONTEXTO_DF = _carregar_contexto_dataset()
+TOTAL_REGISTROS_TREINO = int(len(DATASET_CONTEXTO_DF))
 
 
 def _extrair_exemplos_dataset(defeitos: list[str], limite: int = 3) -> list[str]:
@@ -428,6 +521,57 @@ def _gerar_fallback_contextual(
 CLASSES_PATH = 'classificador_defeitos_classes.pkl'
 CLASSES = joblib.load(CLASSES_PATH) if os.path.exists(CLASSES_PATH) else []
 
+# ─── Mock ML para Vercel (sem carregar modelos) ───
+USE_ML_MOCK = os.getenv("USE_ML_MOCK", "false").lower() in ("true", "1")
+MOCK_DEFEITOS_DB = [
+    {"defeito": "Compressor com defeito", "confianca": 0.50},
+    {"defeito": "Evaporador com vazamento", "confianca": 0.35},
+    {"defeito": "Termostato com defeito", "confianca": 0.15},
+]
+
+def _predict_mock(reclamacao: str) -> dict:
+    """
+    Retorna predição simulada sem carregar modelos ML.
+    Útil para Vercel (evita limite de timeout/tamanho).
+    """
+    top_defeitos = [c["defeito"] for c in MOCK_DEFEITOS_DB]
+    exemplos_dataset = [
+        "Equipamento não liga após queda de energia",
+        "Temperatura oscilando sem controle",
+        "Compressor rodando constantemente",
+    ]
+    
+    resultados_finais = []
+    for i, cand in enumerate(MOCK_DEFEITOS_DB):
+        chave_manual = _normalizar_chave(cand["defeito"])
+        resultados_finais.append({
+            "rank": i + 1,
+            "defeito_sugerido": cand["defeito"],
+            "confianca": cand["confianca"],
+            "confianca_pct": round(float(cand["confianca"]) * 100, 1),
+            "documentacao": MANUAIS_TECNICOS_NORMALIZADO.get(chave_manual, ""),
+            "descricao_llm": "Possível causa identificada com base em sintomas similares em registros históricos.",
+            "acao_recomendada_llm": f"Inspecionar o componente '{cand['defeito']}' e validar em bancada técnica.",
+        })
+    
+    confianca_principal = MOCK_DEFEITOS_DB[0]['confianca']
+    limiar_busca = float(os.getenv("BREAKFIX_REFLECT_THRESHOLD", "0.8"))
+    sugere_busca = bool(confianca_principal < limiar_busca)
+    
+    return {
+        "resultados": resultados_finais,
+        "sugere_busca": sugere_busca,
+        "texto_analisado": reclamacao,
+        "llm_provider": "local-fallback",
+        "contexto_web": {
+            "top_defeitos": top_defeitos,
+            "exemplos_dataset": exemplos_dataset,
+        },
+        "total_classes": len(MOCK_DEFEITOS_DB),
+        "total_registros": 1000,
+        "modelo_ativo": "mock-simulation",
+    }
+
 
 class ReclamacaoRequest(BaseModel):
     texto_cliente: str
@@ -454,6 +598,11 @@ async def prever_defeito(req: ReclamacaoRequest):
     """
     Prediz os 3 defeitos mais prováveis e indica se uma busca web é sugerida.
     """
+    # Se modo mock ativado, retorna predição simulada (útil para Vercel)
+    if USE_ML_MOCK:
+        texto_final = req.texto_cliente.strip() if req.texto_cliente else ""
+        return _predict_mock(texto_final)
+    
     if modelo_tipo == "nenhum":
         raise HTTPException(status_code=503, detail="Nenhum modelo carregado")
 
@@ -513,6 +662,7 @@ async def prever_defeito(req: ReclamacaoRequest):
             "resultados": resultados_finais,
             "sugere_busca": sugere_busca,
             "texto_analisado": texto_final,
+            "llm_provider": LLM_PROVIDER,
             "contexto_web": {
                 "top_defeitos": top_defeitos,
                 "exemplos_dataset": exemplos_dataset,
@@ -529,6 +679,31 @@ async def prever_defeito(req: ReclamacaoRequest):
 @app.post("/web-search")
 async def buscar_na_web(req: WebSearchRequest):
     """Executa uma busca na web para a reclamação fornecida."""
+    # Em modo mock, retorna resultados simulados
+    if USE_ML_MOCK:
+        return {
+            "resultados": [
+                {
+                    "url": "https://suaempresa.com/manuais/compressor.pdf",
+                    "title": "Manual Técnico - Compressor e Diagnóstico",
+                    "snippet": "Guia completo para diagnóstico e manutenção de compressores em refrigeração comercial.",
+                },
+                {
+                    "url": "https://suaempresa.com/diagnostico/evaporador",
+                    "title": "Checklist de Inspeção - Evaporador",
+                    "snippet": "Procedimento passo a passo para inspecionar e identificar vazamentos no evaporador.",
+                },
+                {
+                    "url": "https://suaempresa.com/termostato-calibracao",
+                    "title": "Calibração de Termostato",
+                    "snippet": "Como calibrar corretamente o termostato para manter temperatura estável.",
+                },
+            ],
+            "status": "mock",
+            "query_usada": "Mock search - modo simulação ativo",
+            "query_secundaria": "Mock search alternativo",
+        }
+    
     if not req.texto_cliente or not req.texto_cliente.strip():
         raise HTTPException(status_code=400, detail="O texto do cliente é obrigatório.")
 
@@ -647,8 +822,11 @@ async def health_check():
     """Verifica saúde da API e disponibilidade do modelo"""
     return {
         "status": "ok",
-        "modelo_carregado": modelo_tipo != "nenhum",
-        "modelo_ativo": modelo_tipo,
+        "modelo_carregado": modelo_tipo != "nenhum" or USE_ML_MOCK,
+        "modelo_ativo": modelo_tipo or ("mock-simulation" if USE_ML_MOCK else "nenhum"),
+        "mock_mode_ativo": USE_ML_MOCK,
+        "llm_provider": LLM_PROVIDER,
+        "total_registros_contexto": TOTAL_REGISTROS_TREINO,
         "total_feedbacks": len(FEEDBACK_LOG)
     }
 

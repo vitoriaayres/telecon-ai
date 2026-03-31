@@ -1,7 +1,11 @@
 import os
+from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI # Troque para AzureChatOpenAI se usar Azure
+from langchain_openai import AzureChatOpenAI
+
+# Load environment variables
+load_dotenv()
 
 # 1. Definimos a estrutura de dados que o LLM DEVE retornar
 class ClassificacaoDefeito(BaseModel):
@@ -16,8 +20,14 @@ def analisar_reclamacao(texto_cliente: str, caracteristicas_produto: str) -> Cla
     e retorna a classificação estruturada do defeito.
     """
     
-    # Instanciamos o modelo (usando gpt-4o-mini por ser rápido e barato para essa tarefa)
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    # Configure Azure OpenAI
+    llm = AzureChatOpenAI(
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+        api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-08-01-preview"),
+        deployment_name=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME", "gpt-4o-mini"),
+        temperature=0
+    )
     
     # Forçamos o LLM a seguir a estrutura do Pydantic
     llm_estruturado = llm.with_structured_output(ClassificacaoDefeito)

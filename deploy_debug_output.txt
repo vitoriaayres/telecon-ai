@@ -1,0 +1,12 @@
+
+╔════════════════════════════════════════════════════════════╗
+║  TELECONTROL AZURE APP SERVICE DEPLOYMENT SCRIPT           ║
+║  Target: Brazil South Region                              ║
+║  Status: Ready to Deploy                                   ║
+╚════════════════════════════════════════════════════════════╝
+
+
+[STEP 1/8] Checking Prerequisites...
+══════════════════════════════════════════════════════════════
+✓ Docker installed
+✓ Node.js installed
