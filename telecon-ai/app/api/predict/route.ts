@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const text = await response.text();
       console.error("[predict] Erro do backend (text):", text);
-      let error = {};
+      let error: { detail?: string } = {};
       try {
         error = JSON.parse(text);
       } catch (e) {
