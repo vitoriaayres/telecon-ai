@@ -125,7 +125,7 @@ async function fetchWebSearch(
     throw new Error(data.error ?? data.detail ?? `Erro ${response.status}`);
   }
 
-  if (data.status && data.status !== "ok" && data.status !== "no_results" && data.status !== "fallback_context" && data.status !== "low_context") {
+  if (data.status && data.status !== "ok" && data.status !== "no_results" && data.status !== "fallback_context" && data.status !== "low_context" && data.status !== "mock") {
     throw new Error(data.error ?? `Falha na busca web (${data.status})`);
   }
 

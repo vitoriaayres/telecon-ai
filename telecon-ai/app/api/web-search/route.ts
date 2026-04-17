@@ -19,8 +19,50 @@ interface WebSearchRequest {
   exemplos_dataset?: string[];
 }
 
+const USE_ML_MOCK = process.env.USE_ML_MOCK?.toLowerCase() === "true" || process.env.USE_ML_MOCK === "1";
+
+function getMockWebSearch() {
+  return {
+    resultados: [
+      {
+        url: "https://suaempresa.com/manuais/compressor.pdf",
+        title: "Manual Técnico - Compressor e Diagnóstico",
+        content: "Guia completo para diagnóstico e manutenção de compressores em refrigeração comercial.",
+      },
+      {
+        url: "https://suaempresa.com/diagnostico/evaporador",
+        title: "Checklist de Inspeção - Evaporador",
+        content: "Procedimento passo a passo para inspecionar e identificar vazamentos no evaporador.",
+      },
+      {
+        url: "https://suaempresa.com/termostato-calibracao",
+        title: "Calibração de Termostato",
+        content: "Como calibrar corretamente o termostato para manter temperatura estável.",
+      },
+    ],
+    status: "mock",
+    query_usada: "Mock search - modo simulação ativo",
+    query_secundaria: "Mock search alternativo",
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
+    const body: WebSearchRequest = await req.json();
+
+    if (!body.texto_cliente || body.texto_cliente.trim() === "") {
+      return NextResponse.json(
+        { error: "texto_cliente é obrigatório" },
+        { status: 400 }
+      );
+    }
+
+    // Mock mode: return simulated web search results without calling any backend
+    if (USE_ML_MOCK) {
+      console.log("[web-search] Mock mode ativo, retornando dados simulados");
+      return NextResponse.json(getMockWebSearch());
+    }
+
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
       return NextResponse.json(
@@ -28,15 +70,6 @@ export async function POST(req: NextRequest) {
           error: "BACKEND_URL não configurado no ambiente de produção.",
         },
         { status: 503 }
-      );
-    }
-
-    const body: WebSearchRequest = await req.json();
-
-    if (!body.texto_cliente || body.texto_cliente.trim() === "") {
-      return NextResponse.json(
-        { error: "texto_cliente é obrigatório" },
-        { status: 400 }
       );
     }
 
